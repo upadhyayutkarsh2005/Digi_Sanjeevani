@@ -12,7 +12,7 @@ from hospital_locator import get_nearest_hospitals# Import the module correctly
 app = FastAPI()
 
 # Configure Gemini API
-genai.configure(api_key="AIzaSyB6WidYWiBGAVAjWzXrML8nSsj7AQ1CEWY")
+genai.configure(api_key="")
 
 # Extract text from PDF
 def extract_text_from_pdf(pdf_bytes):
