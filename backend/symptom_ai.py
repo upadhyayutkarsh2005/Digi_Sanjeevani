@@ -1,7 +1,7 @@
 import google.generativeai as genai
 
 # Configure Gemini API
-genai.configure(api_key="AIzaSyB6WidYWiBGAVAjWzXrML8nSsj7AQ1CEWY")
+genai.configure(api_key="")
 
 
 def get_disease_prediction(symptoms):
