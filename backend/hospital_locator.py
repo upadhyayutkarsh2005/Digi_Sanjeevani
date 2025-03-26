@@ -1,34 +1,39 @@
 import requests
-import os
 
-# Load API Key from Environment Variable (Recommended for Security)
-GOOGLE_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
+# Function to get latitude & longitude from an address
+def get_coordinates(address):
+    url = f"https://nominatim.openstreetmap.org/search?q={address}&format=json"
+    response = requests.get(url, headers={"User-Agent": "DigiSanjeevaniApp"})
+    
+    if response.status_code == 200 and response.json():
+        location = response.json()[0]
+        return float(location["lat"]), float(location["lon"])
+    
+    return None, None
 
-def get_nearest_hospitals(latitude, longitude, radius=5000):
+# Function to get nearby hospitals using Overpass API
+def get_nearby_hospitals(lat, lon, radius=5000):
+    overpass_url = "https://overpass-api.de/api/interpreter"
+    
+    query = f"""
+    [out:json];
+    node
+      ["amenity"="hospital"]
+      (around:{radius},{lat},{lon});
+    out;
     """
-    Fetches nearby hospitals using Google Places API.
-    """
-    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-    params = {
-        "location": f"{latitude},{longitude}",
-        "radius": radius,
-        "type": "hospital",
-        "key": GOOGLE_API_KEY
-    }
-
-    response = requests.get(url, params=params)
+    
+    response = requests.get(overpass_url, params={"data": query}, headers={"User-Agent": "DigiSanjeevaniApp"})
     
     if response.status_code == 200:
-        data = response.json()
-        hospitals = []
-        
-        for place in data.get("results", []):
-            hospitals.append({
-                "name": place.get("name"),
-                "address": place.get("vicinity"),
-                "rating": place.get("rating", "N/A"),
-            })
-
-        return hospitals
-    else:
-        return {"error": "Failed to fetch data from Google Places API"}
+        hospitals = response.json().get("elements", [])
+        return [
+            {
+                "name": hospital.get("tags", {}).get("name", "Unknown Hospital"),
+                "latitude": hospital["lat"],
+                "longitude": hospital["lon"]
+            }
+            for hospital in hospitals
+        ]
+    
+    return []

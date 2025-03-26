@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File , Query
 import fitz  # PyMuPDF
 import google.generativeai as genai
 import io
@@ -6,7 +6,11 @@ from PIL import Image
 import pytesseract
 from pydantic import BaseModel
 from symptom_ai import get_disease_prediction
-from hospital_locator import get_nearest_hospitals# Import the module correctly
+from hospital_locator import get_nearby_hospitals
+# Import the module correctly
+from hospital_locator import get_coordinates
+from doctor_consultation import router as doctor_router
+from medicine_recommendation import router as medicine_router
 
 # Initialize FastAPI
 app = FastAPI()
@@ -86,9 +90,20 @@ async def predict_disease(symptoms: SymptomInput):
     return {"input_symptoms": symptoms.symptoms, "predictions": prediction}
 
 @app.get("/nearest-hospitals")
-async def nearest_hospitals(latitude: float = Query(...), longitude: float = Query(...)):
-    hospitals = get_nearest_hospitals(latitude, longitude)
-    return {"nearest_hospitals": hospitals}
+async def nearest_hospitals(address: str, radius: int = Query(5000, description="Search radius in meters")):
+    lat, lon = get_coordinates(address)
+    
+    if lat is None or lon is None:
+        return {"error": "Invalid address or location not found"}
+    
+    hospitals = get_nearby_hospitals(lat, lon, radius)
+    return {"address": address, "latitude": lat, "longitude": lon, "hospitals": hospitals}
+
+app.include_router(doctor_router, prefix="/doctor", tags=["Doctor Consultation"])
+
+app.include_router(medicine_router, prefix="/medicine", tags=["Medicine Recommendation"])
+
+
 
 # Run FastAPI app
 if __name__ == "__main__":
